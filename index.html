@@ -1,0 +1,184 @@
+
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.node {
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+.link {
+  stroke: #999;
+  stroke-opacity: .6;
+}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script>
+
+
+// assume data comes in as list of nodePhone
+// each nodePhone has myid and an array
+// the array is list of nodePhone myids I'm connected to
+var phone1 = {};
+phone1['myid'] = 1914;
+phone1['edges'] = [1860, 1939];
+
+var phone2 = {};
+phone2['myid'] = 1939;
+phone2['edges'] = [1775, 1860, 1914];
+
+var phone3 = {};
+phone3['myid'] = 1860;
+phone3['edges'] = [1914];
+
+var phone4 = {};
+phone4['myid'] = 1775;
+phone4['edges'] = [1939];
+
+var phones = [phone1, phone2, phone3, phone4];
+
+console.log(JSON.stringify(phones));
+
+
+// build the javascript
+var data = {};
+
+
+var nodes = [];
+
+for(var a in phones) {
+	var node = {};
+	node['name'] = phones[a]['myid'];
+	node['group'] = 1;
+
+	nodes.push(node);
+}
+
+data['nodes'] = nodes;
+
+
+var links = [];
+for(var p in phones) { // Iterate through phones
+	for(var e in phones[p]['edges']) { // Iterate through connections to phone
+		// if(phones[p]['myid'] > phones[p]['edges'][e]) {
+			// var connect = {};
+			var source = -1;
+			var target = -1;
+			for(var n in nodes) {
+				if(nodes[n]['name'] == phones[p]['myid'])
+					source = n;
+				else if(nodes[n]['name'] == phones[p]['edges'][e])
+					target = n;
+			}
+
+			console.log("source = " + source);
+			console.log("target = " + target);			
+
+			// var source = nodes.indexOf(phones[p]['myid']);
+			// console.log("start looking"+nodes);
+			// console.log(phones[p]['myid']);
+			// console.log("thang="+nodes.indexOf(phones[p]['myid']));
+			// console.log(nodes.indexOf(parseInt(phones[p]['edges'][e])));
+
+			// var target = nodes.indexOf(parseInt(phones[p]['edges'][e]));
+			// console.log("source=" + source);
+			// console.log(" target=" + target);
+			if(source > target) {
+				var connect = {};
+				connect['source'] = parseInt(source);
+				connect['target'] = parseInt(target);
+				connect['value'] = 1;
+				links.push(connect);
+			}
+		// }
+	}
+}
+
+data['links'] = links;
+
+console.log(JSON.stringify(data));
+
+
+
+// "nodes":[
+//     {"name":"Myriel","group":1},
+//     {"name":"Napoleon","group":1},
+//     {"name":"Mlle.Baptistine","group":1},
+//     {"name":"Mme.Magloire","group":1},
+//     {"name":"CountessdeLo","group":1},
+//     {"name":"Geborand","group":1},
+//     {"name":"Champtercier","group":1},
+//     {"name":"Cravatte","group":1},
+//     {"name":"Count","group":1},
+//     {"name":"OldMan","group":1}
+//   ],
+//   "links":[
+//     {"source":1,"target":0,"value":1},
+//     {"source":2,"target":0,"value":8},
+//     {"source":3,"target":0,"value":10},
+//     {"source":3,"target":2,"value":6},
+//     {"source":4,"target":0,"value":1},
+//     {"source":5,"target":0,"value":1},
+//     {"source":6,"target":0,"value":1},
+//     {"source":7,"target":0,"value":1},
+//     {"source":8,"target":0,"value":2},
+//     {"source":9,"target":0,"value":1}
+//   ]
+
+
+
+
+var width = 960,
+    height = 500;
+
+var color = d3.scale.category20();
+
+var force = d3.layout.force()
+    .charge(-120)
+    .linkDistance(30)
+    .size([width, height]);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+d3.json("miserables.json", function(error, graph) {
+  force
+      .nodes(graph.nodes)
+      .links(graph.links)
+      .start();
+
+  var link = svg.selectAll(".link")
+      .data(graph.links)
+    .enter().append("line")
+      .attr("class", "link")
+      .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+
+  var node = svg.selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("circle")
+      .attr("class", "node")
+      .attr("r", 5)
+      .style("fill", function(d) { return color(d.group); })
+      .call(force.drag);
+
+  node.append("title")
+      .text(function(d) { return d.name; });
+
+  force.on("tick", function() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+  });
+});
+
+</script>
+</body>
